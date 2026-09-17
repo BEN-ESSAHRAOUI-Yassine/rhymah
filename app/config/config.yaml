@@ -25,6 +25,9 @@ keyboard:
 scheduler:
   high_resolution_spin_us: 100
   timing_log_interval: 50
+  jitter_enabled: false
+  jitter_min_ms: 0
+  jitter_max_ms: 15
 
 calibration:
   profile_dir: config/profiles

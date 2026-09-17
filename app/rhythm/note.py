@@ -66,6 +66,28 @@ class KeyboardEvent:
     action: KeyAction
     note_id: int
     synchronization_group: int | None = None
+    confidence: float = 1.0
+
+    def to_dict(self) -> dict:
+        return {
+            "timestamp": self.timestamp,
+            "key": self.key,
+            "action": self.action.value,
+            "note_id": self.note_id,
+            "synchronization_group": self.synchronization_group,
+            "confidence": self.confidence,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> KeyboardEvent:
+        return cls(
+            timestamp=data["timestamp"],
+            key=data["key"],
+            action=KeyAction(data["action"]),
+            note_id=data.get("note_id", 0),
+            synchronization_group=data.get("synchronization_group"),
+            confidence=data.get("confidence", 1.0),
+        )
 
 
 @dataclass

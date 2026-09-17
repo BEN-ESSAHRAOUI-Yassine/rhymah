@@ -38,6 +38,9 @@ class KeyboardConfig:
 class SchedulerConfig:
     high_resolution_spin_us: int = 100
     timing_log_interval: int = 50
+    jitter_enabled: bool = False
+    jitter_min_ms: float = 0.0
+    jitter_max_ms: float = 15.0
 
 
 @dataclass
