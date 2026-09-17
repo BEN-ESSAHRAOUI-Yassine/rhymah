@@ -1,0 +1,30 @@
+app:
+  name: rhythm-bot
+  version: "0.1.0"
+
+timing:
+  synchronization_window_ms: 8
+  input_offset_ms: 0
+  short_note_duration_ms: 80
+
+vision:
+  minimum_note_confidence: 0.80
+  background_frames: 30
+  motion_threshold: 25
+
+keyboard:
+  lanes:
+    A: A
+    S: S
+    D: D
+    J: J
+    K: K
+    L: L
+  emergency_key: F8
+
+scheduler:
+  high_resolution_spin_us: 100
+  timing_log_interval: 50
+
+calibration:
+  profile_dir: config/profiles
