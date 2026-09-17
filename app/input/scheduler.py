@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import heapq
 import logging
+import random
 import threading
 import time
 from dataclasses import dataclass, field
@@ -45,10 +46,16 @@ class Scheduler:
         driver: KeyboardDriver,
         key_state: KeyboardStateMachine,
         dry_run: bool = True,
+        jitter_enabled: bool = False,
+        jitter_min_ms: float = 0.0,
+        jitter_max_ms: float = 15.0,
     ) -> None:
         self._driver = driver
         self._key_state = key_state
         self._dry_run = dry_run
+        self._jitter_enabled = jitter_enabled
+        self._jitter_min_ms = jitter_min_ms
+        self._jitter_max_ms = jitter_max_ms
         self._queue: list[_ScheduledEvent] = []
         self._lock = threading.Lock()
         self._running = False
@@ -64,12 +71,43 @@ class Scheduler:
         with self._lock:
             return len(self._queue)
 
+    def configure_jitter(
+        self,
+        enabled: bool,
+        min_ms: float = 0.0,
+        max_ms: float = 15.0,
+    ) -> None:
+        self._jitter_enabled = enabled
+        self._jitter_min_ms = min_ms
+        self._jitter_max_ms = max_ms
+        logger.info(
+            "Jitter: enabled=%s, range=[%.1f, %.1f] ms",
+            enabled, min_ms, max_ms,
+        )
+
+    def _apply_jitter(self, timestamp: float) -> float:
+        if not self._jitter_enabled:
+            return timestamp
+        jitter_s = random.uniform(
+            self._jitter_min_ms / 1000.0,
+            self._jitter_max_ms / 1000.0,
+        )
+        return timestamp + jitter_s
+
     def schedule(self, events: list[KeyboardEvent]) -> None:
         with self._lock:
             for event in events:
+                jittered_ts = self._apply_jitter(event.timestamp)
+                jittered_event = KeyboardEvent(
+                    timestamp=jittered_ts,
+                    key=event.key,
+                    action=event.action,
+                    note_id=event.note_id,
+                    synchronization_group=event.synchronization_group,
+                )
                 heapq.heappush(self._queue, _ScheduledEvent(
-                    timestamp=event.timestamp,
-                    event=event,
+                    timestamp=jittered_ts,
+                    event=jittered_event,
                 ))
                 self._metrics.total_scheduled += 1
 
