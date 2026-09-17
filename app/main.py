@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import argparse
 import sys
-from pathlib import Path
+
+from PySide6.QtWidgets import QApplication
 
 from app.config.loader import load_config
 from app.logging_config import setup_logging
-from app.state import App, AppState
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -27,12 +27,16 @@ def main(argv: list[str] | None = None) -> int:
 
     config = load_config(config_path=args.config)
     logger = setup_logging(level=args.log_level, log_file=args.log_file)
+    logger.info("Starting %s v%s", config.name, config.version)
 
-    app = App()
-    logger.info("Application started: %s v%s", config.name, config.version)
-    logger.info("State: %s", app.state.value)
+    app = QApplication(sys.argv)
+    app.setApplicationName("Rhythm Bot")
 
-    return 0
+    from app.ui.main_window import MainWindow
+    window = MainWindow()
+    window.show()
+
+    return app.exec()
 
 
 if __name__ == "__main__":

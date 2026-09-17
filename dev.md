@@ -174,11 +174,26 @@
 | 15.5 | Timing precision | Done | Scheduler error tracking |
 | 15.6 | Performance benchmarks | Done | 12 tests: FPS, latency, metrics |
 
+## Phase 16: Composite Note Events
+
+| # | Task | Status | Notes |
+|---|------|--------|-------|
+| 16.1 | NoteEvent model | Done | Multi-lane, multi-head, multi-bar composite events |
+| 16.2 | VisualPrimitive model | Done | Heads, bars with orientation |
+| 16.3 | BarOrientation enum | Done | VERTICAL, HORIZONTAL, DIAGONAL |
+| 16.4 | Horizontal bar detection | Done | `_classify_orientation()` + `detect_bars()` |
+| 16.5 | Multi-lane note grouping | Done | `NoteGrouper` with connectivity analysis |
+| 16.6 | Orange/yellow color support | Done | `ColorDetector` with preset HSV ranges |
+| 16.7 | NoteEvent tests | Done | 20 tests: creation, merge, composite, orientation |
+| 16.8 | Bar detection tests | Done | 15 tests: orientation, confidence, lane assignment |
+| 16.9 | Note grouper tests | Done | 11 tests: grouping, connectivity, multi-lane |
+| 16.10 | Color detector tests | Done | 14 tests: presets, detection, custom colors |
+
 ---
 
-## Milestone 1 Complete (Phases 1–15)
+## Milestone 1 Complete (Phases 1–15) + Phase 16
 
-**Total tests: 192**
+**Total tests: 255**
 
 | Phase | Tests |
 |-------|-------|
@@ -198,7 +213,8 @@
 | 13: Real Input Integration | 21 |
 | 14: Replay & Regression | 17 |
 | 15: Optimization | 12 |
-| **Total** | **192** |
+| 16: Composite Note Events | 60 |
+| **Total** | **255** |
 
 **Key modules:**
 - `app/automation.py` — State-gated automation controller

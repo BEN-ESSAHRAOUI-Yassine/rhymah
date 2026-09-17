@@ -9,7 +9,7 @@ import numpy as np
 
 from app.calibration.calibration import assign_lane_by_trajectory
 from app.calibration.profile import LaneTrajectory, Point
-from app.rhythm.note import NoteType
+from app.rhythm.note import BarOrientation, NoteType, VisualPrimitive
 from app.vision.note_detector import Candidate, DetectionConfig
 
 logger = logging.getLogger(__name__)
@@ -36,6 +36,7 @@ class LongNoteDetector:
         self._min_body_length = 30.0
         self._max_body_width = 80.0
         self._head_body_connect_dist = 40.0
+        self._horizontal_angle_threshold = 30.0
 
     def detect(
         self,
@@ -62,6 +63,77 @@ class LongNoteDetector:
 
         logger.debug("Long-note candidates detected: %d", len(long_notes))
         return long_notes
+
+    def detect_bars(
+        self,
+        mask: np.ndarray,
+        candidates: list[Candidate],
+        trajectories: dict[str, LaneTrajectory] | None = None,
+    ) -> list[VisualPrimitive]:
+        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+        elongated = self._filter_elongated(contours)
+        primitives: list[VisualPrimitive] = []
+
+        for contour in elongated:
+            orientation = self._classify_orientation(contour)
+            rect = cv2.minAreaRect(contour)
+            (cx, cy), (w, h), angle = rect
+            length = max(w, h)
+            width = min(w, h)
+
+            confidence = self._compute_bar_confidence(length, width)
+
+            lane = ""
+            if trajectories:
+                point = Point(x=float(cx), y=float(cy))
+                lane, lane_conf = assign_lane_by_trajectory(point, trajectories)
+                confidence = round(confidence * lane_conf, 3)
+
+            primitive = VisualPrimitive(
+                kind="bar",
+                center=(float(cx), float(cy)),
+                contour=contour,
+                length=length,
+                width=width,
+                orientation=orientation,
+                confidence=confidence,
+                lane=lane,
+            )
+            primitives.append(primitive)
+
+        logger.debug("Bar primitives detected: %d", len(primitives))
+        return primitives
+
+    def _classify_orientation(self, contour: np.ndarray) -> BarOrientation:
+        rect = cv2.minAreaRect(contour)
+        (_, _), (w, h), angle = rect
+
+        if w == 0 or h == 0:
+            return BarOrientation.VERTICAL
+
+        x, y, bw, bh = cv2.boundingRect(contour)
+
+        if bw == 0 or bh == 0:
+            return BarOrientation.VERTICAL
+
+        aspect = max(bw, bh) / min(bw, bh)
+        if aspect < 1.5:
+            return BarOrientation.DIAGONAL
+
+        if bw > bh:
+            return BarOrientation.HORIZONTAL
+        else:
+            return BarOrientation.VERTICAL
+
+    def _compute_bar_confidence(self, length: float, width: float) -> float:
+        if width == 0:
+            return 0.0
+        aspect = length / width
+        ar_score = min(1.0, (aspect - 1.0) / 5.0)
+        length_score = min(1.0, length / 120.0)
+        width_penalty = max(0.0, 1.0 - width / self._max_body_width)
+        return round(min(1.0, max(0.0, 0.4 * ar_score + 0.3 * length_score + 0.3 * width_penalty)), 3)
 
     def _filter_elongated(self, contours: list[np.ndarray]) -> list[np.ndarray]:
         result = []
